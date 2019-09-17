@@ -429,13 +429,17 @@ class TestPageParse:
 class TestPageParseContent:
     """Group the test cases for the `parsing.parse_page_content` function."""
 
-    # @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_content_scenarios.items()])
-    # def test_parse_page_content_03(self, filename, expected):
-    #     """Ensure location information is properly extracted from the page."""
-    #     page = load_test_page(filename)
-    #     actual = parsing.parse_page_content(page, fake.uri())
-    #     assert next(actual) == expected
+    @pytest.mark.xfail(reason="Need more info")
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_content_scenarios.items()])
+    def test_parse_page_content_03(self, filename, expected):
+        """Ensure location information is properly extracted from the page."""
+        page = load_test_page(filename)
+        actual, _ = parsing.parse_page_content(page, True)
+        if Fields.DECEASED in actual:
+            del actual[Fields.DECEASED]
+        assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     def test_parse_page_content_00(self, mocker):
         """Ensure a `process_deceased_field` exception is caught and does not propagate."""
         page_fd = TEST_DATA_DIR / 'traffic-fatality-2-3'
@@ -447,6 +451,7 @@ class TestPageParseContent:
             del result[Fields.DECEASED]
         assert len(result) == 6
 
+    @pytest.mark.skip(reason="Useless")
     def test_parse_page_content_01(self):
         """Ensure a log entry is created if there is no deceased field.
         THIS IS NOT WHAT THE TEST DOES."""
