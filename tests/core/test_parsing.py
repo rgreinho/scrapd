@@ -7,11 +7,8 @@ import pytest
 
 from scrapd.core import parsing
 from scrapd.core.constant import Fields
-from tests import mock_data
 from tests import mock_deceased
 from tests import mock_twitter
-from tests.test_common import scenario_ids
-from tests.test_common import scenario_inputs
 from tests.test_common import load_test_page
 from tests.test_common import TEST_DATA_DIR
 
@@ -29,7 +26,7 @@ def dict_merge(dct, merge_dct):
     :param merge_dct: dct merged into dct
     :return: None
     """
-    for k, v in merge_dct.items():
+    for k in merge_dct:
         if (k in dct and isinstance(dct[k], dict) and isinstance(merge_dct[k], collections.abc.Mapping)):
             dict_merge(dct[k], merge_dct[k])
         else:
@@ -351,8 +348,7 @@ class TestPageParse:
 
     def test_parse_page_00(self, filename, expected):
         """Ensure location information is properly extracted from the page."""
-        page_fd = TEST_DATA_DIR / filename
-        page = page_fd.read_text()
+        page = load_test_page(filename)
         actual = parsing.parse_page(page, fake.uri())
         assert next(actual) == expected
 
@@ -438,7 +434,7 @@ class TestPageParseContent:
     def test_parse_page_content_02(self):
         """Ensure a missing case number raises an exception."""
         with pytest.raises(ValueError):
-            parsing.parse_page_content('The is no case number here.')
+            parsing.parse_page_content('There is no case number here.')
 
 
 class TestParseTwitter:
