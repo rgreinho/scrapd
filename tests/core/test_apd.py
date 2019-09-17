@@ -211,3 +211,13 @@ async def test_fetch_detail_page_00(fetch_text):
         except Exception:
             pass
     fetch_text.assert_called_once_with(session, url)
+
+
+@asynctest.patch("scrapd.core.apd.fetch_detail_page", return_value='Not empty page')
+@pytest.mark.asyncio
+async def test_fetch_and_parse_01(page, mocker):
+    """Ensure a page that cannot be parsed returns an exception."""
+    mocker.patch("scrapd.core.parsing.parse_page", return_value={})
+    with pytest.raises(RetryError):
+        apd.fetch_and_parse.retry.stop = stop_after_attempt(1)
+        await apd.fetch_and_parse(None, 'url')

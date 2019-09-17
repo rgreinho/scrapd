@@ -1,13 +1,9 @@
 """Test the parsing module."""
 import datetime
 
-import asynctest
 from faker import Faker
 import pytest
-from tenacity import RetryError
-from tenacity import stop_after_attempt
 
-from scrapd.core import apd
 from scrapd.core import parsing
 from scrapd.core.constant import Fields
 from tests import mock_data
@@ -20,20 +16,26 @@ from tests.test_common import TEST_DATA_DIR
 # Set faker object.
 fake = Faker()
 
-parse_multiple_scenarios = {
-    'traffic-fatality-50-3': {
-        Fields.GENDER: "female",
-        Fields.DOB: datetime.date(1992, 1, 26)
-    },
-    'traffic-fatality-15-4': {
-        Fields.DOB: datetime.date(1991, 11, 13)
-    }
-}
-
+# Represents the expected output when parsing the data from the twitter fields.
+# KEEP the keys alphabetically ordered to simplify looking for values manually.
 parse_twitter_fields_scenarios = {
     'traffic-fatality-2-3': {
         Fields.CASE: '19-0161105',
         Fields.CRASHES: '2',
+    },
+    'traffic-fatality-71-2': {
+        Fields.CASE: '18-3381590',
+        Fields.CRASHES: '71',
+        Fields.DATE: datetime.date(2018, 12, 4),
+        Fields.LOCATION: '183 service road westbound and Payton Gin Rd.',
+        Fields.TIME: datetime.time(20, 39),
+    },
+    'traffic-fatality-72-1': {
+        Fields.CASE: '18-3551763',
+        Fields.CRASHES: '72',
+        Fields.DATE: datetime.date(2018, 12, 21),
+        Fields.LOCATION: '9500 N Mopac SB',
+        Fields.TIME: datetime.time(20, 20),
     },
     'traffic-fatality-73-2': {
         Fields.CASE: '18-3640187',
@@ -48,22 +50,10 @@ parse_twitter_fields_scenarios = {
         'roadway.',
         Fields.TIME: datetime.time(2, 24),
     },
-    'traffic-fatality-72-1': {
-        Fields.CASE: '18-3551763',
-        Fields.CRASHES: '72',
-        Fields.DATE: datetime.date(2018, 12, 21),
-        Fields.LOCATION: '9500 N Mopac SB',
-        Fields.TIME: datetime.time(20, 20),
-    },
-    'traffic-fatality-71-2': {
-        Fields.CASE: '18-3381590',
-        Fields.CRASHES: '71',
-        Fields.DATE: datetime.date(2018, 12, 4),
-        Fields.LOCATION: '183 service road westbound and Payton Gin Rd.',
-        Fields.TIME: datetime.time(20, 39),
-    },
 }
 
+# Represents the expected output when parsing the data from page content.
+# KEEP the keys alphabetically ordered to simplify looking for values manually.
 parse_page_content_scenarios = {
     'traffic-fatality-2-3': {
         **parse_twitter_fields_scenarios['traffic-fatality-2-3'],
@@ -78,6 +68,42 @@ parse_page_content_scenarios = {
         Fields.LOCATION: 'West William Cannon Drive and Ridge Oak Road',
         Fields.TIME: datetime.time(15, 42),
     },
+    'traffic-fatality-15-4': {
+        Fields.DOB: datetime.date(1991, 11, 13)
+    },
+    'traffic-fatality-20-4': {
+        Fields.CASE: '19-1080319',
+        Fields.DATE: datetime.date(2019, 4, 18),
+        Fields.CRASHES: '20',
+        Fields.LOCATION: '8000 block of West U.S. 290',
+        Fields.TIME: datetime.time(6, 53),
+        Fields.ETHNICITY: 'Hispanic',
+        Fields.GENDER: 'male',
+        Fields.AGE: 19,
+    },
+    'traffic-fatality-50-3': {
+        Fields.LOCATION: '4500 FM 2222/Mount Bonnell Road',
+        Fields.GENDER: "female",
+        Fields.DOB: datetime.date(1992, 1, 26)
+    },
+    'traffic-fatality-71-2': {
+        **parse_twitter_fields_scenarios['traffic-fatality-71-2'],
+        Fields.DOB: datetime.date(1964, 6, 1),
+        Fields.FIRST_NAME: 'Barkat',
+        Fields.LAST_NAME: 'Umatia',
+        Fields.ETHNICITY: 'Other',
+        Fields.GENDER: 'male',
+        Fields.AGE: 54,
+    },
+    'traffic-fatality-72-1': {
+        **parse_twitter_fields_scenarios['traffic-fatality-72-1'],
+        Fields.AGE: 22,
+        Fields.DOB: datetime.date(1996, 3, 29),
+        Fields.ETHNICITY: 'White',
+        Fields.FIRST_NAME: 'Elijah',
+        Fields.GENDER: 'male',
+        Fields.LAST_NAME: 'Perales',
+    },
     'traffic-fatality-73-2': {
         Fields.AGE: 38,
         Fields.CASE: '18-3640187',
@@ -91,36 +117,11 @@ parse_page_content_scenarios = {
         Fields.LOCATION: '1400 E. Highway 71 eastbound',
         Fields.TIME: datetime.time(2, 24),
     },
-    'traffic-fatality-20-4': {
-        Fields.CASE: '19-1080319',
-        Fields.DATE: datetime.date(2019, 4, 18),
-        Fields.CRASHES: '20',
-        Fields.LOCATION: '8000 block of West U.S. 290',
-        Fields.TIME: datetime.time(6, 53),
-        Fields.ETHNICITY: 'Hispanic',
-        Fields.GENDER: 'male',
-        Fields.AGE: 19,
-    },
-    'traffic-fatality-72-1': {
-        **parse_twitter_fields_scenarios['traffic-fatality-72-1'],
-        Fields.AGE: 22,
-        Fields.DOB: datetime.date(1996, 3, 29),
-        Fields.ETHNICITY: 'White',
-        Fields.FIRST_NAME: 'Elijah',
-        Fields.GENDER: 'male',
-        Fields.LAST_NAME: 'Perales',
-    },
-    'traffic-fatality-71-2': {
-        **parse_twitter_fields_scenarios['traffic-fatality-71-2'],
-        Fields.DOB: datetime.date(1964, 6, 1),
-        Fields.FIRST_NAME: 'Barkat',
-        Fields.LAST_NAME: 'Umatia',
-        Fields.ETHNICITY: 'Other',
-        Fields.GENDER: 'male',
-        Fields.AGE: 54,
-    },
 }
 
+
+# Represents the expected output when parsing the data from both the twitter fields and the page content.
+# KEEP the keys alphabetically ordered to simplify looking for values manually.
 parse_page_scenarios = {
     'traffic-fatality-2-3': {
         **parse_page_content_scenarios['traffic-fatality-2-3'],
@@ -139,88 +140,6 @@ parse_page_scenarios = {
         **parse_twitter_fields_scenarios['traffic-fatality-73-2'],
     },
 }
-
-
-@pytest.mark.parametrize('input_,expected', (
-    (
-        mock_twitter.title_00,
-        {
-            'Fatal crashes this year': '73'
-        },
-    ),
-    (None, {}),
-))
-def test_parse_twitter_title_00(input_, expected):
-    """Ensure the Twitter title gets parsed correct."""
-    actual = parsing.parse_twitter_title(input_)
-    assert actual == expected
-
-
-@pytest.mark.parametrize('input_,expected', (
-    (
-        mock_twitter.description_00,
-        {
-            'Case': '18-3640187',
-            'Date': datetime.date(2018, 12, 30),
-            'DOB': datetime.date(1980, 2, 9),
-            'Time': datetime.time(2, 24),
-            'Location': '1400 E. Highway 71 eastbound',
-            'Notes': 'The preliminary investigation shows that a 2003 Ford F150 was '
-            'traveling northbound on the US Highway 183 northbound ramp to E. Highway 71, eastbound. '
-            'The truck went across the E. Highway 71 and US Highway 183 ramp, rolled '
-            'and came to a stop north of the roadway.',
-            'Deceased': ['Corbin Sabillon-Garcia, White male,']
-        },
-    ),
-    (None, {}),
-))
-def test_parse_twitter_description_00(input_, expected):
-    """Ensure the Twitter description gets parsed correctly."""
-    actual = parsing.parse_twitter_description(input_)
-    assert actual == expected
-
-
-def test_parse_twitter_description_01():
-    """Ensure the Twitter description gets parsed correctly."""
-    actual = parsing.parse_twitter_description(mock_twitter.description_01)
-    expected = {
-        Fields.CASE: '19-0161105',
-    }
-    assert actual == expected
-
-
-def test_parse_twitter_description_02():
-    """Ensure a DOB recognized as a field can be parsed."""
-    actual = parsing.parse_twitter_description(mock_twitter.description_02)
-    expected = {
-        'Case': '18-160882',
-        'DOB': datetime.date(1961, 1, 22),
-        'Date': datetime.date(2018, 1, 16),
-        'Location': '1500 W. Slaughter Lane',
-        'Time': datetime.time(17, 14),
-    }
-    if 'Deceased' in actual:
-        del actual['Deceased']
-    assert actual == expected
-
-
-def test_parse_twitter_description_03():
-    """Ensure a DOB recognized as a field can be parsed."""
-    actual = parsing.parse_twitter_description(mock_twitter.description_03)
-    expected = {}
-    assert actual == expected
-
-
-def test_parse_twitter_description_without_notes():
-    """
-    Test that the parser finds the right number of deceased people.
-    """
-    twitter_description = ("'Case:         19-1321936 Date:          May 12, 2019 "
-                           "Time:         11:34 p.m. Location:   12100 N. IH-35 NB Service road "
-                           "Deceased:  First Middle Last, Black male, D.O.B. August 30, 1966'")
-    d = parsing.parse_twitter_description(twitter_description)
-    assert not d.get("D.O.B.")
-    assert d["DOB"] == datetime.date(1966, 8, 30)
 
 
 @pytest.mark.parametrize(
@@ -267,26 +186,6 @@ def test_parse_notes_field(raw_notes, split_word, start, end):
 @pytest.mark.parametrize(
     'raw_deceased,start,end',
     [
-        pytest.param(
-            mock_twitter.description_04,
-            'Cedric',
-            '01/26/1992',
-            marks=pytest.mark.xfail(reason="need more info"),
-        ),
-    ],
-)
-def test_extract_deceased_field_twitter(raw_deceased, start, end):
-    # page_text = load_test_page(page)
-    # parsed_content = parsing.parse_twitter_fields(page_text)
-    # deceased = parsed_content[Fields.DECEASED]
-    deceased = parsing.twitter_deceased_field_to_list(raw_deceased)
-    assert deceased[0].startswith(start)
-    assert deceased[-1].endswith(end)
-
-
-@pytest.mark.parametrize(
-    'raw_deceased,start,end',
-    [
         pytest.param(mock_deceased.DECEASED_00, 'Garre', '13/1991'),
         pytest.param(mock_deceased.DECEASED_01, 'Cedric', '01/26/1992'),
     ],
@@ -296,109 +195,6 @@ def test_extract_deceased_field_from_page(raw_deceased, start, end):
     deceased = parsing.parse_deceased_field(deceased_soup)
     assert deceased[0].startswith(start)
     assert deceased[-1].endswith(end)
-
-
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_content_scenarios.items()])
-def test_parse_page_content_00(filename, expected):
-    """Ensure information are properly extracted from the content detail page.
-           Don't compare notes if parsed from details page."""
-    page_fd = TEST_DATA_DIR / filename
-    page = page_fd.read_text()
-    actual = next(parsing.parse_page(page, 'fake_url'))
-    if 'Notes' in actual and 'Notes' not in expected:
-        del actual['Notes']
-    if 'Deceased' in actual and 'Deceased' not in expected:
-        del actual['Deceased']
-    assert actual == expected
-
-
-def test_parse_page_content_01(mocker):
-    """Ensure a `process_deceased_field` exception is caught and does not propagate."""
-    page_fd = TEST_DATA_DIR / 'traffic-fatality-2-3'
-    page = page_fd.read_text()
-    mocker.patch('scrapd.core.person.process_deceased_field', side_effect=ValueError)
-    result, err = parsing.parse_page_content(page)
-    if 'Deceased' in result:
-        del result['Deceased']
-    assert len(result) == 6
-
-
-def test_parse_page_content_02(mocker):
-    """Ensure a log entry is created if there is no deceased field."""
-    result, err = parsing.parse_page_content('Case: 01-2345678')
-    assert result
-
-
-def test_parse_page_content_03():
-    """Ensure a missing case number raises an exception."""
-    with pytest.raises(ValueError):
-        parsing.parse_page_content('The is no case number here.')
-
-
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_twitter_fields_scenarios.items()])
-def test_parse_twitter_fields_00(filename, expected):
-    """Ensure information are properly extracted from the twitter fields on detail page."""
-    page_fd = TEST_DATA_DIR / filename
-    page = page_fd.read_text()
-    actual = parsing.parse_twitter_fields(page)
-    if 'Deceased' in actual and 'Deceased' not in expected:
-        del actual['Deceased']
-    assert actual == expected
-
-
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
-def test_parse_page_00(filename, expected):
-    """Ensure information are properly extracted from the page.
-       Don't compare notes if parsed from details page."""
-    page_fd = TEST_DATA_DIR / filename
-    page = page_fd.read_text()
-    actual = next(parsing.parse_page(page, fake.uri()))
-    if 'Notes' in actual and 'Notes' not in expected:
-        del actual['Notes']
-    assert actual == expected
-
-
-parse_location_scenarios = {
-    'traffic-fatality-50-3': '4500 FM 2222/Mount Bonnell Road',
-}
-
-
-def test_parse_page_with_missing_data():
-    """Ensure a page with missing data raises an exception."""
-    records = parsing.parse_page("Case:    19-1234567", fake.uri())
-    with pytest.raises(StopIteration):
-        next(records)
-
-
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_location_scenarios.items()])
-def test_parse_page_get_location(filename, expected):
-    """Ensure location information is properly extracted from the page."""
-    page_fd = TEST_DATA_DIR / filename
-    page = page_fd.read_text()
-    actual = parsing.parse_page(page, fake.uri())
-    assert next(actual)['Location'] == expected
-
-
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
-def test_parse_page_01(mocker, filename, expected):
-    """Ensuring ."""
-    data = {}
-    parsing_errors = ['one error']
-    page_fd = TEST_DATA_DIR / filename
-    page = page_fd.read_text()
-    pc = mocker.patch('scrapd.core.parsing.parse_page_content', return_value=(data, parsing_errors))
-    _ = parsing.parse_page(page, fake.uri())
-    assert pc.called_once
-
-
-@asynctest.patch("scrapd.core.apd.fetch_detail_page", return_value='Not empty page')
-@pytest.mark.asyncio
-async def test_fetch_and_parse_01(page, mocker):
-    """Ensure a page that cannot be parsed returns an exception."""
-    mocker.patch("scrapd.core.parsing.parse_page", return_value={})
-    with pytest.raises(RetryError):
-        apd.fetch_and_parse.retry.stop = stop_after_attempt(1)
-        await apd.fetch_and_parse(None, 'url')
 
 
 @pytest.mark.parametrize('input_,expected', (
@@ -476,17 +272,6 @@ def test_parse_deceased_field_00(input_, expected):
     assert deceased_str == expected
 
 
-@pytest.mark.xfail(reason="Make it work with mock")
-@pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_multiple_scenarios.items()])
-def test_multiple_deceased(filename, expected):
-    # page_text = load_test_page(filename)
-    content_parser = parsing.parse_page('page_text', 'fake_url')
-    _ = next(content_parser)
-    second = next(content_parser)
-    for key in expected:
-        assert second[key] == expected[key]
-
-
 @pytest.mark.parametrize('input_,expected', (
     ({
         'Time': 345
@@ -509,3 +294,200 @@ def test_sanitize_fatality_entity(input_, expected):
     """Ensure field values are sanitized."""
     actual = parsing.sanitize_fatality_entity(input_)
     assert actual == expected
+
+
+class TestPageParse:
+    """Group the test cases for the `parsing.parse_page` function."""
+
+    @pytest.mark.xfail(reason="Make it work with mock")
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
+    def test_multiple_deceased(self, filename, expected):
+        """Ensure multiple deceased are parsed correctly."""
+        # page_text = load_test_page(filename)
+        content_parser = parsing.parse_page('page_text', 'fake_url')
+        _ = next(content_parser)
+        second = next(content_parser)
+        for key in expected:
+            assert second[key] == expected[key]
+
+    def test_parse_page_with_missing_data(self):
+        """Ensure a page with missing data raises an exception."""
+        records = parsing.parse_page("Case:    19-1234567", fake.uri())
+        with pytest.raises(StopIteration):
+            next(records)
+
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
+    def test_parse_page_get_location(self, filename, expected):
+        """Ensure location information is properly extracted from the page."""
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        actual = parsing.parse_page(page, fake.uri())
+        assert next(actual)['Location'] == expected
+
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
+    def test_parse_page_01(self, mocker, filename, expected):
+        """Ensuring ."""
+        data = {}
+        parsing_errors = ['one error']
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        pc = mocker.patch('scrapd.core.parsing.parse_page_content', return_value=(data, parsing_errors))
+        _ = parsing.parse_page(page, fake.uri())
+        assert pc.called_once
+
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
+    def test_parse_page_00(self, filename, expected):
+        """Ensure information are properly extracted from the page.
+        Don't compare notes if parsed from details page."""
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        actual = next(parsing.parse_page(page, fake.uri()))
+        if 'Notes' in actual and 'Notes' not in expected:
+            del actual['Notes']
+        assert actual == expected
+
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_scenarios.items()])
+    def test_parse_page_content_00(self, filename, expected):
+        """Ensure information are properly extracted from the content detail page.
+            Don't compare notes if parsed from details page."""
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        actual = next(parsing.parse_page(page, 'fake_url'))
+        if 'Notes' in actual and 'Notes' not in expected:
+            del actual['Notes']
+        if 'Deceased' in actual and 'Deceased' not in expected:
+            del actual['Deceased']
+        assert actual == expected
+
+
+class TestPageParseContent:
+    """Group the test cases for the `parsing.parse_page_content` function."""
+
+    def test_parse_page_content_01(self, mocker):
+        """Ensure a `process_deceased_field` exception is caught and does not propagate."""
+        page_fd = TEST_DATA_DIR / 'traffic-fatality-2-3'
+        page = page_fd.read_text()
+        mocker.patch('scrapd.core.person.process_deceased_field', side_effect=ValueError)
+        result, _ = parsing.parse_page_content(page)
+        if Fields.DECEASED in result:
+            del result[Fields.DECEASED]
+        assert len(result) == 6
+
+    def test_parse_page_content_02(self, mocker):
+        """Ensure a log entry is created if there is no deceased field."""
+        result, _ = parsing.parse_page_content('Case: 01-2345678')
+        assert result
+
+    def test_parse_page_content_03(self):
+        """Ensure a missing case number raises an exception."""
+        with pytest.raises(ValueError):
+            parsing.parse_page_content('The is no case number here.')
+
+
+class TestParseTwitter:
+    """Group the test cases for parsing the Twitter data."""
+
+    @pytest.mark.parametrize('input_,expected', (
+        (
+            mock_twitter.title_00,
+            {
+                'Fatal crashes this year': '73'
+            },
+        ),
+        (None, {}),
+    ))
+    def test_parse_twitter_title_00(self, input_, expected):
+        """Ensure the Twitter title gets parsed correct."""
+        actual = parsing.parse_twitter_title(input_)
+        assert actual == expected
+
+    @pytest.mark.parametrize('input_,expected', (
+        (
+            mock_twitter.description_00,
+            {
+                'Case': '18-3640187',
+                'Date': datetime.date(2018, 12, 30),
+                'DOB': datetime.date(1980, 2, 9),
+                'Time': datetime.time(2, 24),
+                'Location': '1400 E. Highway 71 eastbound',
+                'Notes': 'The preliminary investigation shows that a 2003 Ford F150 was '
+                'traveling northbound on the US Highway 183 northbound ramp to E. Highway 71, eastbound. '
+                'The truck went across the E. Highway 71 and US Highway 183 ramp, rolled '
+                'and came to a stop north of the roadway.',
+                'Deceased': ['Corbin Sabillon-Garcia, White male,']
+            },
+        ),
+        (None, {}),
+    ))
+    def test_parse_twitter_description_00(self, input_, expected):
+        """Ensure the Twitter description gets parsed correctly."""
+        actual = parsing.parse_twitter_description(input_)
+        assert actual == expected
+
+    def test_parse_twitter_description_01(self, ):
+        """Ensure the Twitter description gets parsed correctly."""
+        actual = parsing.parse_twitter_description(mock_twitter.description_01)
+        expected = {
+            Fields.CASE: '19-0161105',
+        }
+        assert actual == expected
+
+    def test_parse_twitter_description_02(self, ):
+        """Ensure a DOB recognized as a field can be parsed."""
+        actual = parsing.parse_twitter_description(mock_twitter.description_02)
+        expected = {
+            'Case': '18-160882',
+            'DOB': datetime.date(1961, 1, 22),
+            'Date': datetime.date(2018, 1, 16),
+            'Location': '1500 W. Slaughter Lane',
+            'Time': datetime.time(17, 14),
+        }
+        if 'Deceased' in actual:
+            del actual['Deceased']
+        assert actual == expected
+
+    def test_parse_twitter_description_03(self, ):
+        """Ensure a DOB recognized as a field can be parsed."""
+        actual = parsing.parse_twitter_description(mock_twitter.description_03)
+        expected = {}
+        assert actual == expected
+
+    def test_parse_twitter_description_without_notes(self, ):
+        """
+        Test that the parser finds the right number of deceased people.
+        """
+        twitter_description = ("'Case:         19-1321936 Date:          May 12, 2019 "
+                               "Time:         11:34 p.m. Location:   12100 N. IH-35 NB Service road "
+                               "Deceased:  First Middle Last, Black male, D.O.B. August 30, 1966'")
+        d = parsing.parse_twitter_description(twitter_description)
+        assert not d.get("D.O.B.")
+        assert d["DOB"] == datetime.date(1966, 8, 30)
+
+    @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_twitter_fields_scenarios.items()])
+    def test_parse_twitter_fields_00(self, filename, expected):
+        """Ensure information are properly extracted from the twitter fields on detail page."""
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        actual = parsing.parse_twitter_fields(page)
+        if Fields.DECEASED in actual and Fields.DECEASED not in expected:
+            del actual[Fields.DECEASED]
+        assert actual == expected
+
+    @pytest.mark.parametrize(
+        'raw_deceased,start,end',
+        [
+            pytest.param(
+                mock_twitter.description_04,
+                'Cedric',
+                '01/26/1992',
+                marks=pytest.mark.xfail(reason="need more info"),
+            ),
+        ],
+    )
+    def test_parse_twitter_fields_01(self, raw_deceased, start, end):
+        # page_text = load_test_page(page)
+        # parsed_content = parsing.parse_twitter_fields(page_text)
+        # deceased = parsed_content[Fields.DECEASED]
+        deceased = parsing.twitter_deceased_field_to_list(raw_deceased)
+        assert deceased[0].startswith(start)
+        assert deceased[-1].endswith(end)
