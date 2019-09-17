@@ -75,7 +75,6 @@ parse_twitter_fields_scenarios = {
 # KEEP the keys alphabetically ordered to simplify looking for values manually.
 parse_page_content_scenarios = {
     'traffic-fatality-2-3': {
-        **parse_twitter_fields_scenarios['traffic-fatality-2-3'],
         Fields.AGE: 58,
         Fields.CRASHES: '2',
         Fields.DOB: datetime.date(1960, 2, 15),
@@ -97,16 +96,16 @@ parse_page_content_scenarios = {
         Fields.TIME: datetime.time(15, 42),
     },
     'traffic-fatality-15-4': {
-        Fields.DOB: datetime.date(1991, 11, 13),
-        Fields.LOCATION: '517 E. Slaughter Lane',
         Fields.AGE: 27,
         Fields.CASE: '19-0921776',
         Fields.DATE: datetime.date(2019, 4, 2),
+        Fields.DOB: datetime.date(1991, 6, 24),
         Fields.ETHNICITY: 'White',
         Fields.CRASHES: '15',
         Fields.FIRST_NAME: 'Garrett',
         Fields.GENDER: 'male',
         Fields.LAST_NAME: 'Davis',
+        Fields.LOCATION: '517 E. Slaughter Lane',
         Fields.NOTES: 'The preliminary investigation indicated that Garrett Davis, the '
         'driver of the 2017 Subaru Forester, was traveling eastbound in the '
         '500 block of E. Slaughter Lane when he attempted to turn left and '
@@ -121,37 +120,86 @@ parse_page_content_scenarios = {
         Fields.TIME: datetime.time(22, 1)
     },
     'traffic-fatality-20-4': {
+        Fields.AGE: 19,
         Fields.CASE: '19-1080319',
         Fields.DATE: datetime.date(2019, 4, 18),
         Fields.CRASHES: '20',
-        Fields.LOCATION: '8000 block of West U.S. 290',
-        Fields.TIME: datetime.time(6, 53),
         Fields.ETHNICITY: 'Hispanic',
         Fields.GENDER: 'male',
-        Fields.AGE: 19,
+        Fields.LOCATION: '8000 block of West U.S. 290',
+        Fields.TIME: datetime.time(6, 53),
+        Fields.NOTES: 'The preliminary investigation revealed that a 2016, black Toyota '
+        '4Runner was exiting a private driveway at 8000 W. Hwy. 290. Signs '
+        'are posted for right turn only and the driver of the 4Runner failed '
+        'to comply and made a left turn. A 2008, gray Ford Mustang was '
+        'traveling westbound in the inside lane and attempted to avoid the '
+        '4Runner but struck its front end. The Mustang continued into '
+        'eastbound lanes of traffic and was struck by a 2013, maroon Dodge '
+        'Ram.\n'
+        '\n'
+        '\tThe driver of the Mustang was pronounced deceased at the scene.',
     },
     'traffic-fatality-50-3': {
+        Fields.AGE: 36,
+        Fields.CASE: '19-2291933',
+        Fields.DATE: datetime.date(2019, 8, 17),
+        Fields.ETHNICITY: 'Black',
+        Fields.CRASHES: '50',
+        Fields.DOB: datetime.date(1982, 12, 28),
+        Fields.FIRST_NAME: 'Cedric',
+        Fields.GENDER: "male",
+        Fields.LAST_NAME: 'Benson',
         Fields.LOCATION: '4500 FM 2222/Mount Bonnell Road',
-        Fields.GENDER: "female",
-        Fields.DOB: datetime.date(1992, 1, 26)
+        Fields.NOTES: 'The preliminary investigation yielded testimony from witnesses who '
+        'reported seeing the BMW motorcycle driven by Cedric Benson '
+        'traveling at a high rate of speed westbound in the left lane of FM '
+        '2222. A white, 2014 Dodge van was stopped at the T-intersection of '
+        'Mount Bonnell Road and FM 2222. After checking for oncoming '
+        'traffic, the van attempted to turn left on to FM 2222 when it was '
+        'struck by the oncoming motorcycle.\n'
+        '\n'
+        '\tThe driver of the van was evaluated by EMS on scene and refused '
+        'transport. The passenger of the van and a bystander at the scene '
+        'attempted to render aid to Mr. Benson and his passenger Aamna '
+        'Najam. Cedric Benson and Aamna Najam were both pronounced on '
+        'scene.\n'
+        '\n'
+        '\tThe van driver remained on scene and is cooperating with the '
+        'ongoing investigation.\n'
+        '\n'
+        '\tThe family of Cedric Benson respectfully requests privacy during '
+        'this difficult time and asks that media refrain from contacting '
+        'them.',
+        Fields.TIME: datetime.time(22, 20),
     },
     'traffic-fatality-71-2': {
-        **parse_twitter_fields_scenarios['traffic-fatality-71-2'],
-        Fields.DOB: datetime.date(1964, 6, 1),
-        Fields.FIRST_NAME: 'Barkat',
-        Fields.LAST_NAME: 'Umatia',
-        Fields.ETHNICITY: 'Other',
-        Fields.GENDER: 'male',
         Fields.AGE: 54,
+        Fields.DOB: datetime.date(1964, 6, 1),
+        Fields.ETHNICITY: 'Other',
+        Fields.FIRST_NAME: 'Barkat',
+        Fields.GENDER: 'male',
+        Fields.LAST_NAME: 'Umatia',
+        Fields.NOTES: 'The preliminary investigation shows that a 2004 Honda sedan was '
+        'traveling northbound on Payton Gin Rd. from a stop. A 2006 Mercedes '
+        'sedan was traveling westbound on the service road of 183. The '
+        'Mercedes and the Honda crashed in the intersection. The Honda was '
+        'damaged on the right side and the Mercedes was damaged on the front '
+        'end. The driver of the Honda was pronounced deceased at the scene '
+        'at 8:50 p.m.',
     },
     'traffic-fatality-72-1': {
-        **parse_twitter_fields_scenarios['traffic-fatality-72-1'],
         Fields.AGE: 22,
         Fields.DOB: datetime.date(1996, 3, 29),
         Fields.ETHNICITY: 'White',
         Fields.FIRST_NAME: 'Elijah',
         Fields.GENDER: 'male',
         Fields.LAST_NAME: 'Perales',
+        Fields.NOTES: 'The preliminary investigation shows that the 2016 Indian motorcycle '
+        'driven by Elijah Perales was stopped on the right shoulder of N '
+        'Mopac SB when an SUV, also traveling southbound, drifted to the '
+        'right and struck Perales. Perales was pronounced deceased at the '
+        'scene. The driver of the SUV remained on site. Investigators are '
+        'still working to determine whether charges will be filed.'
     },
     'traffic-fatality-73-2': {
         Fields.AGE: 38,
@@ -170,24 +218,6 @@ parse_page_content_scenarios = {
 
 # Represents the expected output when parsing the data from both the twitter fields and the page content.
 # KEEP the keys alphabetically ordered to simplify looking for values manually.
-# parse_page_scenarios = {
-#     'traffic-fatality-2-3': {
-#         **parse_page_content_scenarios['traffic-fatality-2-3'],
-#         **parse_twitter_fields_scenarios['traffic-fatality-2-3'],
-#     },
-#     'traffic-fatality-71-2': {
-#         **parse_page_content_scenarios['traffic-fatality-71-2'],
-#         **parse_twitter_fields_scenarios['traffic-fatality-71-2'],
-#     },
-#     'traffic-fatality-72-1': {
-#         **parse_page_content_scenarios['traffic-fatality-72-1'],
-#         **parse_twitter_fields_scenarios['traffic-fatality-72-1'],
-#     },
-#     'traffic-fatality-73-2': {
-#         **parse_page_content_scenarios['traffic-fatality-73-2'],
-#         **parse_twitter_fields_scenarios['traffic-fatality-73-2'],
-#     },
-# }
 parse_page_scenarios = {}
 dict_merge(parse_page_scenarios, parse_page_content_scenarios)
 dict_merge(parse_page_scenarios, parse_twitter_fields_scenarios)
@@ -351,11 +381,19 @@ def test_sanitize_fatality_entity(input_, expected):
 class TestPageParse:
     """Group the test cases for the `parsing.parse_page` function."""
 
-    @pytest.mark.xfail(reason="Make it work with mock")
+    # @pytest.mark.xfail(reason="Why location only?")
+    def test_parse_page_00(self, filename, expected):
+        """Ensure location information is properly extracted from the page."""
+        page_fd = TEST_DATA_DIR / filename
+        page = page_fd.read_text()
+        actual = parsing.parse_page(page, fake.uri())
+        assert next(actual) == expected
+
+    @pytest.mark.skip(reason="This should be tested by test_parse_page_00")
     def test_multiple_deceased(self, filename, expected):
         """Ensure multiple deceased are parsed correctly."""
-        # page_text = load_test_page(filename)
-        content_parser = parsing.parse_page('page_text', 'fake_url')
+        page_text = load_test_page(filename)
+        content_parser = parsing.parse_page(page_text, 'fake_url')
         _ = next(content_parser)
         second = next(content_parser)
         for key in expected:
@@ -367,7 +405,7 @@ class TestPageParse:
         with pytest.raises(StopIteration):
             next(records)
 
-    @pytest.mark.xfail(reason="Why using parse page to extract location only?")
+    @pytest.mark.skip(reason="Why location only? -- Duplicate of test_parse_page_00")
     def test_parse_page_get_location(self, filename, expected):
         """Ensure location information is properly extracted from the page."""
         page_fd = TEST_DATA_DIR / filename
@@ -375,8 +413,8 @@ class TestPageParse:
         actual = parsing.parse_page(page, fake.uri())
         assert next(actual) == expected
 
-    @pytest.mark.skip(reason="Duplicate of test_parse_page_get_location")
-    def test_parse_page_00(self, filename, expected):
+    @pytest.mark.skip(reason="Duplicate of test_parse_page_00")
+    def test_parse_page_01(self, filename, expected):
         """Ensure information are properly extracted from the page.
         Don't compare notes if parsed from details page."""
         page_fd = TEST_DATA_DIR / filename
@@ -386,8 +424,8 @@ class TestPageParse:
             del actual[Fields.NOTES]
         assert actual == expected
 
-    # @pytest.mark.skip(reason="Duplicate of test_parse_page_get_location")
-    def test_parse_page_01(self, mocker, filename, expected):
+    @pytest.mark.skip(reason="Irrelevant because test_parse_page_00 tests the same thing")
+    def test_parse_page_02(self, mocker, filename, expected):
         """Ensure ."""
         data = {}
         parsing_errors = ['one error']
@@ -397,7 +435,7 @@ class TestPageParse:
         _ = parsing.parse_page(page, fake.uri())
         assert pc.called_once
 
-    @pytest.mark.skip(reason="Duplicate of test_parse_page_get_location")
+    @pytest.mark.skip(reason="Irrelevant because test_parse_page_00 tests the same thing")
     def test_parse_page_02(self, filename, expected):
         """Ensure information are properly extracted from the content detail page.
             Don't compare notes if parsed from details page."""
