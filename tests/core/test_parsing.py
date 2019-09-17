@@ -224,42 +224,24 @@ dict_merge(parse_page_scenarios, parse_twitter_fields_scenarios)
 
 
 @pytest.mark.parametrize(
-    'page,start,end',
-    scenario_inputs(mock_data.note_fields_scenarios),
-    ids=scenario_ids(mock_data.note_fields_scenarios),
-)
-def test_parse_notes(page, start, end):
-    """Ensure Notes field are parsed correctly."""
-    soup = parsing.to_soup(page)
-    deceased_field_list = parsing.parse_deceased_field(soup)
-    notes = parsing.parse_notes_field(soup, deceased_field_list[-1])
-    assert notes.startswith(start)
-    assert notes.endswith(end)
-
-
-@pytest.mark.parametrize(
-    'raw_notes,split_word,start,end',
+    'raw_notes,start,end',
     [
+        pytest.param(mock_deceased.DECEASED_WITH_NOTES_00, 'The preliminary', 'be filed.', id='big-paragragh'),
+        pytest.param(mock_deceased.DECEASED_WITH_NOTES_01, 'The preliminary', '01:48 a.m.', id='split-paragraphs'),
         pytest.param(
-            mock_deceased.DECEASED_WITH_NOTES_00, '02/15/1960', 'The preliminary', 'be filed.', id='big-paragragh'),
+            mock_deceased.DECEASED_WITH_NOTES_02, 'The preliminary', 'be filed.', id='multi-dedeceased-one-paragraphs'),
         pytest.param(
-            mock_deceased.DECEASED_WITH_NOTES_01, '12/31/1960', 'The preliminary', '01:48 a.m.', id='split-paragraphs'),
-        pytest.param(mock_deceased.DECEASED_WITH_NOTES_02,
-                     '11/13/1991',
-                     'The preliminary',
-                     'be filed.',
-                     id='multi-dedeceased-one-paragraphs'),
-        pytest.param(mock_deceased.DECEASED_WITH_NOTES_03,
-                     '01/26/1992',
-                     'The preliminary',
-                     'contacting them.',
-                     id='multi-deceased-fields'),
+            mock_deceased.DECEASED_WITH_NOTES_03, 'The preliminary', 'contacting them.', id='multi-deceased-fields'),
+
+        pytest.param(
+            mock_deceased.DECEASED_WITH_NOTES_04, 'The preliminary', 'Maxima', id='No p tag for Deceased field'),
     ],
 )
-def test_parse_notes_field(raw_notes, split_word, start, end):
+def test_parse_notes_field(raw_notes, start, end):
     """Ensure notes are ."""
-    note_soup = parsing.to_soup(raw_notes)
-    notes = parsing.parse_notes_field(note_soup, split_word)
+    soup = parsing.to_soup(raw_notes)
+    deceased_field_list = parsing.parse_deceased_field(soup)
+    notes = parsing.parse_notes_field(soup, deceased_field_list[-1])
     assert notes.startswith(start)
     assert notes.endswith(end)
 
@@ -381,7 +363,6 @@ def test_sanitize_fatality_entity(input_, expected):
 class TestPageParse:
     """Group the test cases for the `parsing.parse_page` function."""
 
-    # @pytest.mark.xfail(reason="Why location only?")
     def test_parse_page_00(self, filename, expected):
         """Ensure location information is properly extracted from the page."""
         page_fd = TEST_DATA_DIR / filename
@@ -413,7 +394,7 @@ class TestPageParse:
         actual = parsing.parse_page(page, fake.uri())
         assert next(actual) == expected
 
-    @pytest.mark.skip(reason="Duplicate of test_parse_page_00")
+    @pytest.mark.skip(reason="Irrelevant because test_parse_page_00 tests the same thing")
     def test_parse_page_01(self, filename, expected):
         """Ensure information are properly extracted from the page.
         Don't compare notes if parsed from details page."""

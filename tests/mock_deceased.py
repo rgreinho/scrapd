@@ -47,6 +47,14 @@ The family of Cedric Benson respectfully requests privacy during this difficult 
 Anyone with information regarding this case should call APD’s Vehicular Homicide Unit at (512) 974-4424. You can also submit tips by downloading Austin PD’s free mobile app on <a href="https://austintexas.us5.list-manage.com/track/click?u=1861810ce1dca1a4c1673747c&amp;id=7712ff1eed&amp;e=bcdeacc118">iPhone</a> and <a href="https://austintexas.us5.list-manage.com/track/click?u=1861810ce1dca1a4c1673747c&amp;id=70c9a0190c&amp;e=bcdeacc118">Android</a>. </p>
 """
 
+DECEASED_WITH_NOTES_04 = """
+<p>	<strong>Time:</strong>            2:50 a.m.  <br />
+<br /><strong>Location:</strong>      700 W. Stassney Ln.<br />
+<br /><strong>Deceased:</strong>    Deceased Person Name, White female (D.O.B. 1-1-99)<br />
+<br />
+The preliminary investigation shows that a blue, 2004 Nissan Maxima</p>
+"""
+
 DECEASED_00 = """
 <strong>Deceased:  </strong>Garrett Evan Davis | White male | 06/24/1991<br>
                     Keaton Michael Carnley | White male | 11/13/1991                  <br>
