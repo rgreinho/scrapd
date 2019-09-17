@@ -12,6 +12,7 @@ from tests import mock_deceased
 from tests import mock_twitter
 from tests.test_common import scenario_ids
 from tests.test_common import scenario_inputs
+from tests.test_common import load_test_page
 from tests.test_common import TEST_DATA_DIR
 
 # Set faker object.
@@ -232,13 +233,12 @@ dict_merge(parse_page_scenarios, parse_twitter_fields_scenarios)
             mock_deceased.DECEASED_WITH_NOTES_02, 'The preliminary', 'be filed.', id='multi-dedeceased-one-paragraphs'),
         pytest.param(
             mock_deceased.DECEASED_WITH_NOTES_03, 'The preliminary', 'contacting them.', id='multi-deceased-fields'),
-
         pytest.param(
             mock_deceased.DECEASED_WITH_NOTES_04, 'The preliminary', 'Maxima', id='No p tag for Deceased field'),
     ],
 )
 def test_parse_notes_field(raw_notes, start, end):
-    """Ensure notes are ."""
+    """Ensure notes are parsed correctly."""
     soup = parsing.to_soup(raw_notes)
     deceased_field_list = parsing.parse_deceased_field(soup)
     notes = parsing.parse_notes_field(soup, deceased_field_list[-1])
@@ -253,81 +253,67 @@ def test_parse_notes_field(raw_notes, start, end):
         pytest.param(mock_deceased.DECEASED_01, 'Cedric', '01/26/1992'),
     ],
 )
-def test_extract_deceased_field_from_page(raw_deceased, start, end):
+def test_parse_deceased_field_00(raw_deceased, start, end):
+    """Ensure the deceased fields is parse correctly."""
     deceased_soup = parsing.to_soup(raw_deceased)
     deceased = parsing.parse_deceased_field(deceased_soup)
     assert deceased[0].startswith(start)
     assert deceased[-1].endswith(end)
 
 
-@pytest.mark.parametrize('input_,expected', (
-    (pytest.param('<p>	<strong>Deceased: </strong> Luis Fernando Martinez-Vertiz | Hispanic male | 04/03/1994</p>',
-                  ['Luis Fernando Martinez-Vertiz | Hispanic male | 04/03/1994'],
-                  id="p, strong, pipes")),
-    (pytest.param('<p>	<strong>Deceased: </strong> Cecil Wade Walker, White male, D.O.B. 3-7-70</p>',
-                  ['Cecil Wade Walker, White male, D.O.B. 3-7-70'],
-                  id="p, strong, commas")), (pytest.param(
-                      '<p style="margin-left:.25in;">'
-                      '<strong>Deceased:&nbsp;</strong> Halbert Glen Hendricks | Black male | 9-24-78</p>',
-                      ['Halbert Glen Hendricks | Black male | 9-24-78'],
-                      id="p with style, strong, pipes")), (pytest.param('', [], id="Deceased tag not found")),
-    (pytest.param(
-        '<p>	<strong>Deceased:&nbsp; </strong>Hispanic male, 19 years of age<br>'
-        '&nbsp;<br>'
-        'The preliminary investigation revealed that a 2016, black Toyota 4Runner was exiting a private driveway at '
-        '8000 W. Hwy. 290. Signs are posted for right turn only and the driver of the 4Runner failed to comply and '
-        'made a left turn. A 2008, gray Ford Mustang was traveling westbound in the inside lane and attempted to avoid '
-        'the 4Runner but struck its front end. The Mustang continued into eastbound lanes of traffic and was struck by '
-        'a 2013, maroon Dodge Ram.<br>'
-        '&nbsp;<br>'
-        'The driver of the Mustang was pronounced deceased at the scene.<br>'
-        '&nbsp;<br>'
-        'Anyone with information regarding this case should call APD’s Vehicular Homicide Unit Detectives at '
-        '(512) 974-6935. You can also submit tips by downloading APD’s mobile app, Austin PD, for free on '
-        '<a href="https://austintexas.us5.list-manage.com/track/click?u=1861810ce1dca1a4c1673747c&amp;'
-        'id=26ced4f341&amp;e=bcdeacc118">iPhone</a> and <a href="https://austintexas.us5.list-manage.com/track/click'
-        '?u=1861810ce1dca1a4c1673747c&amp;id=3abaf7d912&amp;e=bcdeacc118">Android</a>.&nbsp;</p>',
-        ['Hispanic male, 19 years of age'],
-        id='XX years of age of age format + included in notes paragraph')),
-    (pytest.param(
-        '<p>	<strong><span style="font-family: &quot;Verdana&quot;,sans-serif;">Deceased:</span></strong>&nbsp; '
-        '&nbsp;Ann Bottenfield-Seago, White female, DOB 02/15/1960<br>'
-        '&nbsp;<br>'
-        'The preliminary investigation shows that the grey, 2003 Volkwagen Jetta being driven by '
-        'Ann Bottenfield-Seago failed to yield at a stop sign while attempting to turn westbound on to West William '
-        'Cannon Drive from Ridge Oak Road. The Jetta collided with a black, 2017 Chevrolet truck that was eastbound in '
-        'the inside lane of West William Cannon Drive. Bottenfield-Seago was pronounced deceased at the scene. The '
-        'passenger in the Jetta and the driver of the truck were both transported to a local hospital with non-life '
-        'threatening injuries. No charges are expected to be filed.<br>'
-        '&nbsp;<br>'
-        'APD is investigating this case. Anyone with information regarding this case should call APD’s Vehicular '
-        'Homicide Unit Detectives at (512) 974-3761. You can also submit tips by downloading APD’s mobile app, '
-        'Austin PD, for free on <a href="https://austintexas.us5.list-manage.com/track/click?'
-        'u=1861810ce1dca1a4c1673747c&amp;id=d8c2ad5a29&amp;e=bcdeacc118"><span style="color: rgb(197, 46, 38); '
-        'text-decoration: none; text-underline: none;">iPhone</span></a> and '
-        '<a href="https://austintexas.us5.list-manage.com/track/click?'
-        'u=1861810ce1dca1a4c1673747c&amp;id=5fcb8ff99e&amp;e=bcdeacc118"><span style="color: rgb(197, 46, 38); '
-        'text-decoration: none; text-underline: none;">Android</span></a>.<br>'
-        '&nbsp;<br>'
-        'This is Austin’s second fatal traffic crash of 2018, resulting&nbsp;in two fatalities this year. At this time '
-        'in 2018, there were two fatal traffic crashes and three traffic fatalities.<br>'
-        '&nbsp;<br><strong><i><span style="font-family: &quot;Verdana&quot;,sans-serif;">These statements are based '
-        'on the initial assessment of the fatal crash and investigation is still pending. Fatality information may '
-        'change.</span></i></strong></p>',
-        ['Ann Bottenfield-Seago, White female, DOB 02/15/1960'],
-        id='included in notes paragraph',
-    )), (pytest.param(
-        '<p>	<strong>Deceased:   </strong>David John Medrano,<strong> </strong>Hispanic male, D.O.B. 6-9-70</p>',
-        ['David John Medrano, Hispanic male, D.O.B. 6-9-70'],
-        id='stray strong in the middle',
-    )), (pytest.param(
-        '<p>	<strong>Deceased 1:&nbsp; </strong>Cedric Benson | Black male | 12/28/1982</p>'
-        '<p>	<strong>Deceased 2:&nbsp; </strong>Aamna Najam | Asian female | 01/26/1992</p>',
-        ['Cedric Benson | Black male | 12/28/1982', 'Aamna Najam | Asian female | 01/26/1992'],
-        id='double deceased',
-    )), (pytest.param('<p> <strong>Deceased:   </strong>Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977) </p>',
-                      ['Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977)'],
-                      id='colon after DOB'))))
+@pytest.mark.parametrize(
+    'input_,expected',
+    [
+        pytest.param(
+            '<p>	<strong>Deceased: </strong> Luis Fernando Martinez-Vertiz | Hispanic male | 04/03/1994</p>',
+            ['Luis Fernando Martinez-Vertiz | Hispanic male | 04/03/1994'],
+            id="p, strong, pipes",
+        ),
+        pytest.param(
+            '<p>	<strong>Deceased: </strong> Cecil Wade Walker, White male, D.O.B. 3-7-70</p>',
+            ['Cecil Wade Walker, White male, D.O.B. 3-7-70'],
+            id="p, strong, commas",
+        ),
+        pytest.param(
+            '<p style="margin-left:.25in;">'
+            '<strong>Deceased:&nbsp;</strong> Halbert Glen Hendricks | Black male | 9-24-78</p>',
+            ['Halbert Glen Hendricks | Black male | 9-24-78'],
+            id="p with style, strong, pipes",
+        ),
+        pytest.param(
+            '',
+            [],
+            id="Deceased tag not found",
+        ),
+        pytest.param(
+            '<p>	<strong>Deceased:&nbsp; </strong>Hispanic male, 19 years of age<br>',
+            ['Hispanic male, 19 years of age'],
+            id='XX years of age of age format + included in notes paragraph',
+        ),
+        pytest.param(
+            '<p>	<strong><span style="font-family: &quot;Verdana&quot;,sans-serif;">Deceased:</span></strong>&nbsp; '
+            '&nbsp;Ann Bottenfield-Seago, White female, DOB 02/15/1960<br>',
+            ['Ann Bottenfield-Seago, White female, DOB 02/15/1960'],
+            id='included in notes paragraph',
+        ),
+        pytest.param(
+            '<p>	<strong>Deceased:   </strong>David John Medrano,<strong> </strong>Hispanic male, D.O.B. 6-9-70</p>',
+            ['David John Medrano, Hispanic male, D.O.B. 6-9-70'],
+            id='stray strong in the middle',
+        ),
+        pytest.param(
+            '<p>	<strong>Deceased 1:&nbsp; </strong>Cedric Benson | Black male | 12/28/1982</p>'
+            '<p>	<strong>Deceased 2:&nbsp; </strong>Aamna Najam | Asian female | 01/26/1992</p>',
+            ['Cedric Benson | Black male | 12/28/1982', 'Aamna Najam | Asian female | 01/26/1992'],
+            id='double deceased',
+        ),
+        pytest.param(
+            '<p> <strong>Deceased:   </strong>Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977) </p>',
+            ['Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977)'],
+            id='colon after DOB',
+        ),
+    ],
+)
 def test_parse_deceased_field_00(input_, expected):
     """Ensure the deceased field gets parsed correctly."""
     field = parsing.to_soup(input_)

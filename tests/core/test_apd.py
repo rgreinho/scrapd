@@ -12,6 +12,7 @@ from tenacity import RetryError
 from tenacity import stop_after_attempt
 
 from scrapd.core import apd
+from tests.test_common import load_test_page
 from tests.test_common import TEST_DATA_DIR
 
 # Disable logging for the tests.
@@ -19,12 +20,6 @@ logger.remove()
 
 # Set faker object.
 fake = Faker()
-
-
-def load_test_page(page):
-    """Load a test page."""
-    page_fd = TEST_DATA_DIR / page
-    return page_fd.read_text()
 
 
 @pytest.fixture
