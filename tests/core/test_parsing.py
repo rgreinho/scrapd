@@ -243,19 +243,19 @@ def test_parse_notes_field(raw_notes, start, end):
     assert notes.endswith(end)
 
 
-@pytest.mark.parametrize(
-    'raw_deceased,start,end',
-    [
-        pytest.param(mock_deceased.DECEASED_00, 'Garre', '13/1991'),
-        pytest.param(mock_deceased.DECEASED_01, 'Cedric', '01/26/1992'),
-    ],
-)
-def test_parse_deceased_field_00(raw_deceased, start, end):
-    """Ensure the deceased fields is parse correctly."""
-    deceased_soup = parsing.to_soup(raw_deceased)
-    deceased = parsing.parse_deceased_field(deceased_soup)
-    assert deceased[0].startswith(start)
-    assert deceased[-1].endswith(end)
+# @pytest.mark.parametrize(
+#     'raw_deceased,start,end',
+#     [
+#         pytest.param(mock_deceased.DECEASED_00, 'Garre', '13/1991'),
+#         pytest.param(mock_deceased.DECEASED_01, 'Cedric', '01/26/1992'),
+#     ],
+# )
+# def test_parse_deceased_field_00(raw_deceased, start, end):
+#     """Ensure the deceased fields is parse correctly."""
+#     deceased_soup = parsing.to_soup(raw_deceased)
+#     deceased = parsing.parse_deceased_field(deceased_soup)
+#     assert deceased[0].startswith(start)
+#     assert deceased[-1].endswith(end)
 
 
 @pytest.mark.parametrize(
@@ -308,6 +308,20 @@ def test_parse_deceased_field_00(raw_deceased, start, end):
             '<p> <strong>Deceased:   </strong>Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977) </p>',
             ['Ernesto Gonzales Garcia, H/M, (DOB: 11/15/1977)'],
             id='colon after DOB',
+        ),
+        pytest.param(
+            '<strong>Deceased:  </strong>Garrett Evan Davis | White male | 06/24/1991<br>'
+            'Keaton Michael Carnley | White male | 11/13/1991                  <br>',
+            [],
+            id="Multiple fatalities",
+            marks=pytest.mark.xfail(reason="Does not know how to handle this case yet."),
+        ),
+        pytest.param(
+            '<p>	<strong>Deceased 1:  </strong>Cedric Benson | Black male | 12/28/1982</p>'
+            '<p>	<strong>Deceased 2:  </strong>Aamna Najam | Asian female | 01/26/1992</p',
+            [],
+            id="Multiple fatalities - other format",
+            marks=pytest.mark.xfail(reason="Does not know how to handle this case yet."),
         ),
     ],
 )
@@ -415,10 +429,18 @@ class TestPageParse:
 class TestPageParseContent:
     """Group the test cases for the `parsing.parse_page_content` function."""
 
+    # @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_page_content_scenarios.items()])
+    # def test_parse_page_content_03(self, filename, expected):
+    #     """Ensure location information is properly extracted from the page."""
+    #     page = load_test_page(filename)
+    #     actual = parsing.parse_page_content(page, fake.uri())
+    #     assert next(actual) == expected
+
     def test_parse_page_content_00(self, mocker):
         """Ensure a `process_deceased_field` exception is caught and does not propagate."""
         page_fd = TEST_DATA_DIR / 'traffic-fatality-2-3'
         page = page_fd.read_text()
+        # Why did we patch an unused function???
         mocker.patch('scrapd.core.person.process_deceased_field', side_effect=ValueError)
         result, _ = parsing.parse_page_content(page)
         if Fields.DECEASED in result:
@@ -441,12 +463,9 @@ class TestParseTwitter:
     """Group the test cases for parsing the Twitter data."""
 
     @pytest.mark.parametrize('input_,expected', (
-        (
-            mock_twitter.title_00,
-            {
-                'Fatal crashes this year': '73'
-            },
-        ),
+        (mock_twitter.title_00, {
+            Fields.CRASHES: '73'
+        }),
         (None, {}),
     ))
     def test_parse_twitter_title_00(self, input_, expected):
@@ -454,6 +473,7 @@ class TestParseTwitter:
         actual = parsing.parse_twitter_title(input_)
         assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     @pytest.mark.parametrize('input_,expected', (
         (
             mock_twitter.description_00,
@@ -477,6 +497,19 @@ class TestParseTwitter:
         actual = parsing.parse_twitter_description(input_)
         assert actual == expected
 
+    @pytest.mark.parametrize('input_,expected', [
+        pytest.param(
+            mock_twitter.description_01,
+            {Fields.CASE: '19-0161105'},
+            id="Case number only",
+        )
+    ])
+    def test_parse_twitter_description_10(self, input_, expected):
+        """Ensure the Twitter description gets parsed correctly."""
+        actual = parsing.parse_twitter_description(input_)
+        assert actual == expected
+
+    @pytest.mark.skip(reason="Useless")
     def test_parse_twitter_description_01(self, ):
         """Ensure the Twitter description gets parsed correctly."""
         actual = parsing.parse_twitter_description(mock_twitter.description_01)
@@ -485,6 +518,7 @@ class TestParseTwitter:
         }
         assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     def test_parse_twitter_description_02(self, ):
         """Ensure a DOB recognized as a field can be parsed."""
         actual = parsing.parse_twitter_description(mock_twitter.description_02)
@@ -499,12 +533,14 @@ class TestParseTwitter:
             del actual[Fields.DECEASED]
         assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     def test_parse_twitter_description_03(self):
         """Ensure a DOB recognized as a field can be parsed."""
         actual = parsing.parse_twitter_description(mock_twitter.description_03)
         expected = {}
         assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     def test_parse_twitter_description_without_notes(self):
         """
         Test that the parser finds the right number of deceased people.
@@ -519,13 +555,13 @@ class TestParseTwitter:
     @pytest.mark.parametrize('filename,expected', [(k, v) for k, v in parse_twitter_fields_scenarios.items()])
     def test_parse_twitter_fields_00(self, filename, expected):
         """Ensure information are properly extracted from the twitter fields on detail page."""
-        page_fd = TEST_DATA_DIR / filename
-        page = page_fd.read_text()
+        page = load_test_page(filename)
         actual = parsing.parse_twitter_fields(page)
         if Fields.DECEASED in actual and Fields.DECEASED not in expected:
             del actual[Fields.DECEASED]
         assert actual == expected
 
+    @pytest.mark.skip(reason="Useless")
     @pytest.mark.parametrize(
         'raw_deceased,start,end',
         [
